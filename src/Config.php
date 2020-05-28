@@ -24,7 +24,7 @@ class Config
     private array $templates;
 
     /** @var string */
-    private string $locale;
+    private string $locale = '';
 
     /**
      * Config constructor.
@@ -74,13 +74,13 @@ class Config
         if (!$files = scandir($directory)) {
             throw new ConfigException('scan-dir-error', $directory);
         }
+        $files = array_diff($files, ['.', '..']);
         foreach ($files as $file) {
-            if (in_array($files, ['.', '..'])) {
-                continue;
-            } else if (is_dir($file)) {
-                $result[$file] = $this->loadRecursive($directory . DS . $file);
+            $filename = $directory . DS . $file;
+            if (is_dir($filename)) {
+                $result[$file] = $this->loadRecursive($filename);
             } else {
-                $result[$file] = $directory . DS . $file;
+                $result[$file] = $filename;
             }
         }
         return $result;
@@ -96,17 +96,20 @@ class Config
     private function buildRecursive(string $directory, array $templates, array $language)
     {
         foreach ($templates as $name => $template) {
-            if (is_string($template) && file_exists($template)) {
-                continue;
-            } else if (is_array($template)) {
-                if (!mkdir($directory . DS . $name, 0775)) {
-                    throw new ConfigException('directory-create-error', [$directory . DS . $name]);
-                }
-                $this->buildRecursive($directory . DS . $name, $template, $language[$name]);
-            } else {
-                $content = sprintf(require $template, ...require $language[$name]);
-                if (false === file_put_contents($directory . DS . $name, $content)) {
-                    throw new ConfigException('file-create-error', [$directory . DS . $name]);
+            $filename = $directory . DS . $name;
+            if (!file_exists($filename)) {
+                if (is_array($template)) {
+                    if (!mkdir($filename, 0775)) {
+                        throw new ConfigException('directory-create-error', [$filename]);
+                    }
+                    $this->buildRecursive($filename, $template, $language[$name]);
+                } else if (!isset($language[$name])) {
+                    throw new ConfigException('language-texts-not-found', [$filename]);
+                } else {
+                    $content = sprintf(file_get_contents($template), ...require $language[$name]);
+                    if (false === file_put_contents($filename, $content)) {
+                        throw new ConfigException('file-create-error', [$filename]);
+                    }
                 }
             }
         }
