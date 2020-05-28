@@ -98,13 +98,13 @@ class Config
         foreach ($templates as $name => $template) {
             $filename = $directory . DS . $name;
             if (!file_exists($filename)) {
-                if (is_array($template)) {
+                if (!isset($language[$name])) {
+                    throw new ConfigException('language-texts-not-found', [$filename]);
+                } else if (is_array($template)) {
                     if (!mkdir($filename, 0775)) {
                         throw new ConfigException('directory-create-error', [$filename]);
                     }
                     $this->buildRecursive($filename, $template, $language[$name]);
-                } else if (!isset($language[$name])) {
-                    throw new ConfigException('language-texts-not-found', [$filename]);
                 } else {
                     $content = sprintf(file_get_contents($template), ...require $language[$name]);
                     if (false === file_put_contents($filename, $content)) {
