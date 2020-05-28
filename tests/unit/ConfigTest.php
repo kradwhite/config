@@ -104,7 +104,7 @@ class ConfigTest extends \Codeception\Test\Unit
     public function testBuildLanguageTextNotFound()
     {
         $directory = __DIR__ . '/../_data/wrong5';
-        $target = __DIR__ . '/../_data/target';
+        $target = __DIR__ . '/../_data/wrong1';
         $this->tester->expectThrowable(new ConfigException('language-texts-not-found', [$target . '/config.php']), function () use ($directory, $target) {
             (new Config($directory))->build($target, 'ru');
         });
