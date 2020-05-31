@@ -98,7 +98,8 @@ class Config
         foreach ($templates as $name => $template) {
             $filename = $directory . DS . $name;
             if (!file_exists($filename)) {
-                if (!isset($language[$name])) {
+                $languageFilename = $this->getLanguageFilename($language, $name);
+                if (!$languageFilename) {
                     throw new ConfigException('language-texts-not-found', [$filename]);
                 } else if (is_array($template)) {
                     if (!mkdir($filename, 0775)) {
@@ -106,7 +107,7 @@ class Config
                     }
                     $this->buildRecursive($filename, $template, $language[$name]);
                 } else {
-                    $content = sprintf(file_get_contents($template), ...require $language[$name]);
+                    $content = sprintf(file_get_contents($template), ...require $languageFilename);
                     if (false === file_put_contents($filename, $content)) {
                         throw new ConfigException('file-create-error', [$filename]);
                     }
@@ -142,5 +143,21 @@ class Config
         $localeDirectory = $this->source . DS . 'locales' . DS . $locale;
         $this->checkDirectory($localeDirectory);
         return $this->loadRecursive($localeDirectory);
+    }
+
+    /**
+     * @param array $language
+     * @param string $name
+     * @return string|array
+     */
+    private function getLanguageFilename(array $language, string $name)
+    {
+        if (isset($language[$name])) {
+            return $language[$name];
+        } else if (isset($language[$name . '.php'])) {
+            return $language[$name . '.php'];
+        } else {
+            return '';
+        }
     }
 }
